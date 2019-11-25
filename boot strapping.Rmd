@@ -51,6 +51,7 @@ Show my datasets
 ```{r}
 sim_df = 
   bind_rows(const = sim_df_const, nonconst = sim_df_nonconst, .id = "data_source") 
+
 sim_df %>% 
   ggplot(aes(x = x, y = y)) + 
   geom_point(alpha = .5) +
@@ -64,6 +65,7 @@ Fit two models ...
 sim_df_const %>% 
   lm(y ~ x, data = .) %>% 
   broom::tidy()
+
 sim_df_nonconst %>% 
   lm(y ~ x, data = .) %>% 
   broom::tidy()
@@ -78,6 +80,7 @@ write a function to draw a bootstrap sample based on a dataframe.
 boot_sample = function(df) {
   sample_frac(df, size = 1, replace = TRUE)
 }
+#replace alows ppl to counted in the sample twice or more, size is expressed in proportion, here 1 is max, keep size as 1 for bootstrapping
 ```
 
 ```{r}
@@ -99,6 +102,7 @@ boot_straps =
 Do some kind of analysis....
 
 ```{r}
+#take of your boot straps model , fit a lim model, then look at slope
 bootstrap_results = 
   boot_straps %>% 
   mutate(
@@ -115,6 +119,8 @@ summarize these results
 bootstrap_results %>% 
   group_by(term) %>% 
   summarize(se = sd(estimate))
+
+#how much variability in ur estimates
 ```
 
 
@@ -149,6 +155,7 @@ sim_df_nonconst %>%
 sim_df_const %>% 
   lm(y ~ x, data = .) %>% 
   broom::tidy()
+
 sim_df_const %>% 
   modelr::bootstrap(n = 1000) %>% 
   mutate(
@@ -159,7 +166,7 @@ sim_df_const %>%
   group_by(term) %>% 
   summarize(boot_se = sd(estimate))
 ```
-
+# if your assumptions are correct you should get a estimate of b0 and b1
 
 ## Revisit Airbnb
 

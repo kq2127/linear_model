@@ -26,6 +26,7 @@ Show my datasets
 ``` r
 sim_df = 
   bind_rows(const = sim_df_const, nonconst = sim_df_nonconst, .id = "data_source") 
+
 sim_df %>% 
   ggplot(aes(x = x, y = y)) + 
   geom_point(alpha = .5) +
@@ -69,6 +70,7 @@ write a function to draw a bootstrap sample based on a dataframe.
 boot_sample = function(df) {
   sample_frac(df, size = 1, replace = TRUE)
 }
+#replace alows ppl to counted in the sample twice or more, size is expressed in proportion, here 1 is max, keep size as 1 for bootstrapping
 ```
 
 ``` r
@@ -92,6 +94,7 @@ boot_straps =
 Do some kind of analysis….
 
 ``` r
+#take of your boot straps model , fit a lim model, then look at slope
 bootstrap_results = 
   boot_straps %>% 
   mutate(
@@ -115,6 +118,10 @@ bootstrap_results %>%
     ##   <chr>        <dbl>
     ## 1 (Intercept) 0.0747
     ## 2 x           0.101
+
+``` r
+#how much variability in ur estimates
+```
 
 ## Try the modelr package
 
@@ -175,6 +182,8 @@ sim_df_const %>%
     ##   <chr>         <dbl>
     ## 1 (Intercept)  0.101 
     ## 2 x            0.0737
+
+# if your assumptions are correct you should get a estimate of b0 and b1
 
 ## Revisit Airbnb
 
