@@ -275,4 +275,5 @@ pivot_longer(
 
 <img src="Cross-Validation_files/figure-gfm/unnamed-chunk-18-1.png" width="90%" />
 
-So\! Which model is best here …?
+So\! Which model is best here …? smmoth is better, but usually its the
+pwl…

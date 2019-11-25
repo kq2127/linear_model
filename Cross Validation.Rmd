@@ -238,3 +238,4 @@ pivot_longer(
 ```
 
 So! Which model is best here ...?
+smmoth is better, but usually its the pwl...
