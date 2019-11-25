@@ -23,16 +23,18 @@ nyc_airbnb =
     neighborhood = neighbourhood) %>% 
   filter(boro != "Staten Island") %>% 
   select(price, stars, boro, neighborhood, room_type)
+#model framework is it possible to predict predict price on some of these other variables
 ```
 
 Fit a first linear model\!
 
 ``` r
 fit = lm(price ~ stars + boro, data = nyc_airbnb)
+#price is outcome, stars and broro are predictors
 ```
 
 ``` r
-fit
+fit #bronx is the reference boro, b/c alphabetical order 
 summary(fit)
 coef(fit)
 summary(fit)$coef
@@ -44,7 +46,7 @@ tidy the results instead\!
 fit %>% 
   broom::tidy() %>% 
   mutate(term = str_replace(term, "boro", "Boro: ")) %>% 
-  knitr::kable(digits = 3)
+  knitr::kable(digits = 3) #makes a nicer table, and truncates decimals at 3. 
 ```
 
 | term            | estimate | std.error | statistic | p.value |
@@ -82,7 +84,7 @@ refit the last model
 ``` r
 fit = lm(price ~ stars + boro, data = nyc_airbnb)
 fit %>% 
-  broom::tidy()
+  broom::tidy() #new reference is manhattan for boro because now data frame has broro in most frequent to least freuwnet boro
 ```
 
     ## # A tibble: 5 x 5
@@ -97,6 +99,7 @@ fit %>%
 ## diagnostics
 
 ``` r
+#dagnostics is all about looking at your residuals and seeing the fitted valuues that comes out of the model 
 modelr::add_residuals(nyc_airbnb, fit) %>% 
   ggplot(aes(x = boro, y = resid)) + 
   geom_violin() + 
@@ -115,7 +118,7 @@ modelr::add_residuals(nyc_airbnb, fit) %>%
 <img src="linear-models_files/figure-gfm/unnamed-chunk-8-2.png" width="90%" />
 
 ``` r
-modelr::add_predictions(nyc_airbnb, fit)
+modelr::add_predictions(nyc_airbnb, fit) #what is the prdicted price for the fitted model
 ```
 
     ## # A tibble: 40,492 x 6
@@ -140,6 +143,7 @@ everyone loves nesting
 
 ``` r
 fit_interaction = lm(price ~ stars * boro + room_type * boro, data = nyc_airbnb)
+
 fit_interaction %>% 
   broom::tidy()
 ```
@@ -217,7 +221,7 @@ Let’s nest neighborhoods.
 ``` r
 nyc_airbnb %>% 
   filter(boro == "Manhattan") %>% 
-  nest(data = -neighborhood) %>% 
+  nest(data = -neighborhood) %>% #nest everything except for neighborhood
   mutate(
     models = map(.x = data, ~lm(price ~ stars + room_type, data = .x)),
     results = map(models, broom::tidy)
@@ -252,6 +256,7 @@ manhattan_nest_lm_results =
   ) %>% 
   select(neighborhood, results) %>% 
   unnest(results)
+
 manhattan_nest_lm_results %>% 
   filter(str_detect(term, "room_type")) %>% 
   ggplot(aes(x = neighborhood, y = estimate)) + 
