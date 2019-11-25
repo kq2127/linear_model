@@ -1,0 +1,206 @@
+---
+title: "Boot Strapping"
+author: "Kristal Quispe"
+date: "11/25/2019"
+output: github_document
+---
+
+```{r setup, include = FALSE}
+library(tidyverse)
+library(p8105.datasets)
+knitr::opts_chunk$set(
+	echo = TRUE,
+	warning = FALSE,
+	fig.width = 8, 
+  fig.height = 6,
+  out.width = "90%"
+)
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+set.seed(1)
+```
+
+
+## Pull ourselves up by the bootstraps
+
+
+```{r}
+set.seed(1)
+n_samp = 250
+sim_df_const = 
+  tibble(
+    x = rnorm(n_samp, 1, 1),
+    error = rnorm(n_samp, 0, 1),
+    y = 2 + 3 * x + error
+  )
+sim_df_nonconst = sim_df_const %>% 
+  mutate(
+  error = error * .75 * x,
+  y = 2 + 3 * x + error
+)
+```
+
+
+Show my datasets
+
+```{r}
+sim_df = 
+  bind_rows(const = sim_df_const, nonconst = sim_df_nonconst, .id = "data_source") 
+sim_df %>% 
+  ggplot(aes(x = x, y = y)) + 
+  geom_point(alpha = .5) +
+  stat_smooth(method = "lm") +
+  facet_grid(~data_source) 
+```
+
+Fit two models ...
+
+```{r}
+sim_df_const %>% 
+  lm(y ~ x, data = .) %>% 
+  broom::tidy()
+sim_df_nonconst %>% 
+  lm(y ~ x, data = .) %>% 
+  broom::tidy()
+```
+
+
+## how can i bootstrap
+
+write a function to draw a bootstrap sample based on a dataframe.
+
+```{r}
+boot_sample = function(df) {
+  sample_frac(df, size = 1, replace = TRUE)
+}
+```
+
+```{r}
+boot_sample(df = sim_df_nonconst) %>% 
+  ggplot(aes(x = x, y = y)) + 
+  geom_point(alpha = .5)
+```
+
+Organize a dataframe ...
+
+```{r}
+boot_straps = 
+  tibble(
+    strap_num = 1:1000,
+    strap_sample = rerun(1000, boot_sample(df = sim_df_nonconst))
+  )
+```
+
+Do some kind of analysis....
+
+```{r}
+bootstrap_results = 
+  boot_straps %>% 
+  mutate(
+    models = map(strap_sample, ~lm(y ~ x, data = .x)),
+    results = map(models, broom::tidy)
+  ) %>% 
+  select(-strap_sample, -models) %>% 
+  unnest(results)
+```
+
+summarize these results 
+
+```{r}
+bootstrap_results %>% 
+  group_by(term) %>% 
+  summarize(se = sd(estimate))
+```
+
+
+## Try the modelr package
+
+```{r}
+boot_straps = 
+  sim_df_nonconst %>% 
+  modelr::bootstrap(1000)
+```
+
+
+COPY AND PASTE!!!
+
+```{r}
+sim_df_nonconst %>% 
+  modelr::bootstrap(n = 1000) %>% 
+  mutate(
+    models = map(strap, ~lm(y ~ x, data = .x) ),
+    results = map(models, broom::tidy)) %>% 
+  select(-strap, -models) %>% 
+  unnest(results) %>% 
+  group_by(term) %>% 
+  summarize(boot_se = sd(estimate))
+```
+
+
+## What if your assumptions aren't wrong?
+
+
+```{r}
+sim_df_const %>% 
+  lm(y ~ x, data = .) %>% 
+  broom::tidy()
+sim_df_const %>% 
+  modelr::bootstrap(n = 1000) %>% 
+  mutate(
+    models = map(strap, ~lm(y ~ x, data = .x) ),
+    results = map(models, broom::tidy)) %>% 
+  select(-strap, -models) %>% 
+  unnest(results) %>% 
+  group_by(term) %>% 
+  summarize(boot_se = sd(estimate))
+```
+
+
+## Revisit Airbnb
+
+```{r}
+data("nyc_airbnb")
+nyc_airbnb = 
+  nyc_airbnb %>% 
+  mutate(stars = review_scores_location / 2) %>% 
+  rename(
+    boro = neighbourhood_group,
+    neighborhood = neighbourhood) %>% 
+  filter(boro != "Staten Island") %>% 
+  select(price, stars, boro, neighborhood, room_type)
+```
+
+```{r}
+nyc_airbnb %>% 
+  ggplot(aes(x = stars, y = price)) +
+  geom_point()
+```
+
+
+Re-use the stuff I just did ...
+
+```{r}
+airbnb_results = 
+  nyc_airbnb %>%
+  filter(boro == "Manhattan") %>% 
+  modelr::bootstrap(n = 1000) %>% 
+  mutate(
+    models = map(strap, ~lm(price ~ stars, data = .x) ),
+    results = map(models, broom::tidy)) %>% 
+  select(results) %>% 
+  unnest(results)
+```
+
+Make a plot of the `stars` distribution.
+
+```{r}
+airbnb_results %>% 
+  filter(term == "stars") %>% 
+  ggplot(aes(x = estimate)) + 
+  geom_density()
+```
